@@ -10,8 +10,8 @@ make
 ```shell
 sudo insmod proc_count.ko
 cat /proc/count 
-Result of proc/count was 164
 ```
+Result of proc/count was 164
 
 
 ## Cleaning Up
