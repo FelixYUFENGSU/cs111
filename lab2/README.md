@@ -1,17 +1,23 @@
-## UID: 123456789
+## UID: 005756776
+(IMPORTANT: Only replace the above numbers with your true UID, do not modify spacing and newlines, otherwise your tarfile might not be created correctly)
 
 ## Pipe Up
 
-One sentence description
+This program simulates the pipe (|) operator, where the results of one argument are passed on to the next argument in sequence.
 
 ## Building
 
-Explain briefly how to build your program
+To build the program, simply run:
+> make
 
 ## Running
 
-Show an example run of your program, using at least two additional arguments, and what to expect
+Example run of program:
+> make
+> ./pipe ls wc
+> 8      8      73
 
 ## Cleaning up
 
-Explain briefly how to clean up all binary files
+To clean up the program, simply run:
+> make clean
