@@ -22,14 +22,13 @@ if(argc == 2){
 	return 0;
 }
 
-int fd[2];
 int input_fd = 0;
-int err = 0;
+pid_t pids[argc -1];
 
-for(int i = 1; i < argc -1; i++){
-	errno = 0;
-	err = pipe(fd);
-	if(err == -1){
+for(int i = 1; i < argc; i++){
+	int fd[2];
+	
+	if(i < argc -1 && pipe(fd) == -1){
 		perror("Pipe failed");
 		return errno;
 	}
@@ -49,48 +48,42 @@ for(int i = 1; i < argc -1; i++){
 
 		//redirect output if not last command 
 		if(i < argc - 1){
-			close(fd[0]);
 			dup2(fd[1], STDOUT_FILENO);
 			close(fd[1]);
+			close(fd[0]);
 		}
 		execlp(argv[i], argv[i], (char*)0);
 		perror("fail execlp");
 		exit(errno);
 	}
-	else{
-		//parent process
-		close(fd[1]);
-		errno = 0;
-		err = dup2(fd[0], 0);
-		if(err == -1){
-			perror("fail dup2");
-			return errno;
-		}
-		close(fd[0]);
-
-		errno = 0;
-		err = wait(NULL);
-		if(err == -1){
-			perror("fail wait");
-			return errno;
-		}
+	if(input_fd != 0){
+		close(input_fd);
 	}
+	if(i < argc -1){
+		close(fd[1]);
+		input_fd = fd[0];
+	}
+
+	pids[i-1] = pid;
+	
 }
 
-errno = 0;
-err = execlp(argv[1], argv[1], (char*)0);
-if(err == -1){
-	perror("fail execlp");
-	return errno;
+int retval = 0;
+for(int i = 0; i < argc -1; i++){
+	int status;
+	waitpid(pids[i], &status, 0);
+	if(retval == 0 && WIFEXITED(status)) 
+		retval = WEXITSTATUS(status);
+	if(retval == 0 && WIFSIGNALED(status))
+		retval = 128 + WTERMSIG(status);
 }
 
-return 0;
+return retval;
+
 }
 
 int main(int argc, char *argv[])
 {
- int val;
- val = pipeArg(argc,argv);
 
-return val;
+ return pipeArg(argc,argv);
 }
