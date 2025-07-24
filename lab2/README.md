@@ -15,7 +15,7 @@ To build the program, simply run:
 Example run of program:
 > make
 > ./pipe ls wc
-> 8      8      73
+> 6      6      56
 
 ## Cleaning up
 
