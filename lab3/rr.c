@@ -20,7 +20,10 @@ struct process
 
   TAILQ_ENTRY(process) pointers;
 
-  /* Additional fields here */
+  // Additional fields here
+  u32 remaining_time;
+  i32 first_run_time;
+  u32 finish_time;
   /* End of "Additional fields here" */
 };
 
@@ -160,7 +163,68 @@ int main(int argc, char *argv[])
   u32 total_response_time = 0;
 
   /* Your code here */
-  
+  for(u32 i = 0; i < size; ++i){
+    data[i].remaining_time = data[i].burst_time;
+    data[i].first_run_time = -1;
+    TAILQ_INSERT_TAIL(&list, &data[i], pointers);
+  }
+
+  struct process_list ready_queue;
+  TAILQ_INIT(&ready_queue);
+
+  u32 current_time = 0;
+  u32 completed = 0;
+  struct process *p, *tmp;
+
+  while(completed < size){
+    p = TAILQ_FIRST(&list);
+    while(p != NULL){
+     tmp = TAILQ_NEXT(p, pointers);
+      if(p->arrival_time <= current_time){
+        TAILQ_REMOVE(&list, p, pointers);
+        TAILQ_INSERT_TAIL(&ready_queue, p, pointers);
+      }
+      p = tmp;
+    }
+
+    if(TAILQ_EMPTY(&ready_queue)){
+      current_time++;
+      continue;
+    }
+
+    p = TAILQ_FIRST(&ready_queue);
+    TAILQ_REMOVE(&ready_queue, p, pointers);
+
+    if(p->first_run_time == -1){
+      p->first_run_time = current_time;
+      total_response_time += (p->first_run_time - p->arrival_time);
+    }
+
+    u32 run_time = (p->remaining_time > quantum_length) ? quantum_length : p->remaining_time;
+    p->remaining_time -= run_time;
+    current_time += run_time;
+
+    struct process *arriving = TAILQ_FIRST(&list);
+    while(arriving != NULL){
+      struct process *next = TAILQ_NEXT(arriving, pointers);
+      if(arriving->arrival_time <= current_time){
+        TAILQ_REMOVE(&list, arriving, pointers);
+        TAILQ_INSERT_TAIL(&ready_queue, arriving, pointers);
+      }
+      arriving = next;
+    }
+
+    if(p->remaining_time > 0){
+      TAILQ_INSERT_TAIL(&ready_queue, p, pointers);
+    }
+    else{
+        p->finish_time = current_time;
+        total_waiting_time+= (p->finish_time - p->arrival_time - p->burst_time);
+        completed++;
+    }
+  }
+
+
   /* End of "Your code here" */
 
   printf("Average waiting time: %.2f\n", (float)total_waiting_time / (float)size);
