@@ -23,7 +23,7 @@ struct process
   // Additional fields here
   u32 remaining_time;
   i32 first_run_time;
-  u32 finish_time;
+  //u32 finish_time;
   /* End of "Additional fields here" */
 };
 
@@ -174,9 +174,15 @@ int main(int argc, char *argv[])
 
   u32 current_time = 0;
   u32 completed = 0;
-  struct process *p, *tmp;
+  
 
+  struct process_list pending;
+  TAILQ_INIT(&pending);
+  for(u32 i = 0; i < size; ++i){
+    TAILQ_INSERT_TAIL(&pending, &data[i], pointers);
+  }
   while(completed < size){
+    struct process *p, *tmp;
     p = TAILQ_FIRST(&list);
     while(p != NULL){
      tmp = TAILQ_NEXT(p, pointers);
@@ -200,10 +206,20 @@ int main(int argc, char *argv[])
       total_response_time += (p->first_run_time - p->arrival_time);
     }
 
-    u32 run_time = (p->remaining_time > quantum_length) ? quantum_length : p->remaining_time;
-    p->remaining_time -= run_time;
-    current_time += run_time;
+    u32 run_for = (p->remaining_time > quantum_length) ? quantum_length : p->remaining_time;
+    p->remaining_time -= run_for;
+    current_time += run_for;
 
+    struct process *a = TAILQ_FIRST(&pending);
+    while(a!= NULL){
+      tmp = TAILQ_NEXT(a, pointers);
+      if(a->arrival_time <= current_time){
+        TAILQ_REMOVE(&pending, a, pointers);
+        TAILQ_INSERT_TAIL(&ready_queue, a, pointers);
+      }
+      a = tmp;
+    }
+    /*
     struct process *arriving = TAILQ_FIRST(&list);
     while(arriving != NULL){
       struct process *next = TAILQ_NEXT(arriving, pointers);
@@ -213,13 +229,13 @@ int main(int argc, char *argv[])
       }
       arriving = next;
     }
-
+    */
     if(p->remaining_time > 0){
-      TAILQ_INSERT_TAIL(&ready_queue, p, pointers);
+   TAILQ_INSERT_TAIL(&ready_queue, p, pointers);
     }
     else{
-        p->finish_time = current_time;
-        total_waiting_time+= (p->finish_time - p->arrival_time - p->burst_time);
+        //p->finish_time = current_time;
+        total_waiting_time+= (current_time- p->arrival_time - p->burst_time);
         completed++;
     }
   }
